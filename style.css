@@ -861,3 +861,14 @@ input[type="checkbox"]:hover {
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+.market-price-options {
+  margin: 10px 0;
+  display: flex;
+  gap: 20px;
+}
+.market-price-options label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}

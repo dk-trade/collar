@@ -365,7 +365,57 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 100);
 
-  // Main form submission - FIXED: Added better error handling and validation
+
+
+  // Recalculate metrics based on checkbox states
+function recalculateMetrics(records) {
+  const useMarketCall = document.getElementById('useMarketCall')?.checked || false;
+  const useMarketPut = document.getElementById('useMarketPut')?.checked || false;
+  
+  return records.map(record => {
+    const callPrice = useMarketCall ? record.callBid : record.callMid;
+    const putPrice = useMarketPut ? record.putAsk : record.putMid;
+    
+    const netCost = (record.price - callPrice + putPrice) * 100;
+    const collar = (record.strike - record.price + callPrice - putPrice) * 100;
+    const annReturn = (collar / netCost) * (365 / record.dte) * 100;
+    
+    return {
+      ...record,
+      netCost,
+      collar,
+      annReturn
+    };
+  }).filter(r => r.collar > 0); // Only keep profitable collars
+}
+
+// Handle market price checkbox changes
+function setupMarketPriceHandlers() {
+  const checkboxes = ['useMarketCall', 'useMarketPut'];
+  checkboxes.forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) {
+      cb.addEventListener('change', () => {
+        if (rawFetchedData.length > 0) {
+          const recalculated = recalculateMetrics(rawFetchedData);
+          resultsUI.setRecords(recalculated);
+          resultsUI.render();
+          
+          const msgElement = document.getElementById('message');
+          if (msgElement) {
+            msgElement.textContent = `Found ${recalculated.length} profitable collar positions (recalculated).`;
+          }
+        }
+      });
+    }
+  });
+}
+
+// Call this after DOM is loaded
+setTimeout(() => {
+  setupMarketPriceHandlers();
+}, 100);
+  
   const tradeForm = document.getElementById('tradeForm');
   if (tradeForm) {
     tradeForm.addEventListener('submit', async (e) => {
@@ -430,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (useDemoData && rawFetchedData.length > 0) {
           // Use data from localStorage if demo mode is enabled and data exists
-          allFetchedRecords = rawFetchedData;
+          allFetchedRecords = recalculateMetrics(rawFetchedData);
           msgElement.textContent = `Using demo data with ${allFetchedRecords.length} profitable collar positions.`;
         } else {
           // Fetch data using calculator
@@ -442,6 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
           });
 
           allFetchedRecords = result.records;
+          rawFetchedData = result.records; // Store the raw data
           apiCallsMade = result.apiCalls;
 
           // Save fetched data to localStorage
@@ -470,6 +521,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Set records and render results using ResultsUI
         resultsUI.setRecords(allFetchedRecords);
         resultsUI.render();
+
+        // Show market price options
+const marketOptions = document.getElementById('marketPriceOptions');
+if (marketOptions) {
+  marketOptions.style.display = 'block';
+}
 
       } catch (err) {
         console.error('Form submission error:', err);
