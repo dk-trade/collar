@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize DTE slider
     initializeRangeSlider('dte', {
       min: 1,
-      max: 365,
+      max: 365 * 2,
       startMin: 1,
       startMax: 45,
       suffix: ' days',
