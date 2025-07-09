@@ -367,49 +367,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-  // Recalculate metrics based on checkbox states
-function recalculateMetrics(records) {
-  const useMarketCall = document.getElementById('useMarketCall')?.checked || false;
-  const useMarketPut = document.getElementById('useMarketPut')?.checked || false;
-  
-  return records.map(record => {
-    const callPrice = useMarketCall ? record.callBid : record.callMid;
-    const putPrice = useMarketPut ? record.putAsk : record.putMid;
+  function recalculateMetrics(records) {
+    const callPricePct = parseInt(document.getElementById('callPriceSlider')?.value || '50');
+    const putPricePct = parseInt(document.getElementById('putPriceSlider')?.value || '50');
     
-    const netCost = (record.price - callPrice + putPrice) * 100;
-    const collar = (record.strike - record.price + callPrice - putPrice) * 100;
-    const annReturn = (collar / netCost) * (365 / record.dte) * 100;
-    
-    return {
-      ...record,
-      netCost,
-      collar,
-      annReturn
-    };
-  }).filter(r => r.collar > 0); // Only keep profitable collars
-}
+    return records.map(record => {
+      // Calculate CALL price based on percentage between bid and ask
+      const callPrice = record.callBid + (callPricePct / 100) * (record.callAsk - record.callBid);
+      
+      // Calculate PUT price based on percentage between bid and ask
+      const putPrice = record.putBid + (putPricePct / 100) * (record.putAsk - record.putBid);
+      
+      const netCost = (record.price - callPrice + putPrice) * 100;
+      const collar = (record.strike - record.price + callPrice - putPrice) * 100;
+      const annReturn = (collar / netCost) * (365 / record.dte) * 100;
+      
+      return {
+        ...record,
+        netCost,
+        collar,
+        annReturn
+      };
+    }).filter(r => r.collar > 0);
+  }
 
-// Handle market price checkbox changes
-function setupMarketPriceHandlers() {
-  const checkboxes = ['useMarketCall', 'useMarketPut'];
-  checkboxes.forEach(id => {
-    const cb = document.getElementById(id);
-    if (cb) {
-      cb.addEventListener('change', () => {
-        if (rawFetchedData.length > 0) {
-          const recalculated = recalculateMetrics(rawFetchedData);
-          resultsUI.setRecords(recalculated);
-          resultsUI.render();
-          
-          const msgElement = document.getElementById('message');
-          if (msgElement) {
-            msgElement.textContent = `Found ${recalculated.length} profitable collar positions (recalculated).`;
-          }
-        }
+  function setupMarketPriceHandlers() {
+    const callSlider = document.getElementById('callPriceSlider');
+    const putSlider = document.getElementById('putPriceSlider');
+    const callDisplay = document.getElementById('callPriceDisplay');
+    const putDisplay = document.getElementById('putPriceDisplay');
+    
+    if (callSlider && callDisplay) {
+      callSlider.addEventListener('input', (e) => {
+        callDisplay.textContent = e.target.value + '%';
+        updateResults();
       });
     }
-  });
-}
+    
+    if (putSlider && putDisplay) {
+      putSlider.addEventListener('input', (e) => {
+        putDisplay.textContent = e.target.value + '%';
+        updateResults();
+      });
+    }
+    
+    function updateResults() {
+      if (rawFetchedData.length > 0) {
+        const recalculated = recalculateMetrics(rawFetchedData);
+        resultsUI.setRecords(recalculated);
+        resultsUI.render();
+        
+        const msgElement = document.getElementById('message');
+        if (msgElement) {
+          msgElement.textContent = `Found ${recalculated.length} profitable collar positions (recalculated).`;
+        }
+      }
+    }
+  }
 
 // Call this after DOM is loaded
 setTimeout(() => {

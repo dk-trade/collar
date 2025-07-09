@@ -50,15 +50,17 @@
     <button type="submit" class="submit-btn">Fetch & Calculate</button>
   </form>
 
-  <div id="message" class="message"></div>
+  <div id="message" class="message"></div>  
   <div id="marketPriceOptions" class="market-price-options" style="display: none;">
-    <label>
-      <input type="checkbox" id="useMarketCall"> use MARKET on CALL
-    </label>
-    <label>
-      <input type="checkbox" id="useMarketPut"> use MARKET on PUT
-    </label>
-  </div>
+    <div class="price-slider-group">
+      <label>CALL Sell Price: <span id="callPriceDisplay">50%</span> (0%=Bid, 50%=Mid, 100%=Ask)</label>
+      <input type="range" id="callPriceSlider" min="0" max="100" value="50" step="1">
+    </div>
+    <div class="price-slider-group">
+      <label>PUT Buy Price: <span id="putPriceDisplay">50%</span> (0%=Bid, 50%=Mid, 100%=Ask)</label>
+      <input type="range" id="putPriceSlider" min="0" max="100" value="50" step="1">
+    </div>
+</div>
   <div id="resultsContainer">
     <div class="table-scroll-container">
     </div>
